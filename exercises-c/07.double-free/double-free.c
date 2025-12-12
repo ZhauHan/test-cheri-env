@@ -22,9 +22,16 @@ __cheri_compartment("double-free") int vuln1(void)
     int rc1 = free(ptr);
     CHERIOT_DEBUG_LOG(DEBUG_CONTEXT, "First free rc = {}", rc1);
 
+    // Documentation of heap_free: which is called by free() in cheri
+    // Free a heap allocation.
+    // Returns 0 on success, -EINVAL if ptr is not a valid pointer to the start of a live heap allocation, 
+    // or -ENOTENOUGHSTACK if the stack size is insufficiently large to safely run the function.
+    
     int rc2 = free(ptr2);
     if (rc2 == -EINVAL){
+        // since ptr is not valid after it was freed, second free should return EINVAL
         CHERIOT_DEBUG_LOG(DEBUG_CONTEXT, "Second free rejected: EINVAL (double free detected).");
+        return -EINVAL;
     }
 
     return 0;

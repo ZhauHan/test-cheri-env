@@ -4,7 +4,7 @@
 #include <debug.hh>
 #include <assert.h>
 #include <unwind.h>
-#include <fail-simulator-on-error.h>
+#include <errno.h>
 
 using Debug = ConditionalDebug<true, "Stack Buffer Over Write Compartment">;
 
@@ -27,7 +27,19 @@ int __cheri_compartment("stack-buffer-over-write") vuln1()
     assert((uintptr_t)upper == (uintptr_t)&lower[sizeof(lower)]);
     upper[0] = 'a';
     Debug::log("upper[0] = {}", upper[0]);
+
+    CHERIOT_DURING
+    {
     write_buf(lower, sizeof(lower));
     Debug::log("upper[0] = {}", upper[0]);
+    }
+    CHERIOT_HANDLER
+    {
+        Debug::log("Exception: Write outside Capability Bounds");
+        Debug::log("Error Code: {}", -EFAULT);
+        return -EFAULT;
+    }
+    CHERIOT_END_HANDLER
+
     return 0;
 }

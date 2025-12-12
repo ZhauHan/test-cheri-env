@@ -5,6 +5,7 @@
 #include <debug.h>
 #include <assert.h>
 #include <unwind.h>
+#include <errno.h>
 
 #define DEBUG_CONTEXT "Stack Buffer Over Write Compartment"
 
@@ -30,8 +31,18 @@ __cheri_compartment("stack-buffer-over-write") int vuln1(void)
 
     upper[0] = 'a';
     CHERIOT_DEBUG_LOG(DEBUG_CONTEXT, "upper[0] = {}", upper[0]);
-
+    
+    CHERIOT_DURING
+    {
     write_buf(lower, sizeof(lower));
+    }
+    CHERIOT_HANDLER
+    {
+        CHERIOT_DEBUG_LOG(DEBUG_CONTEXT, "Exception: Write outside Capability Bounds");
+        CHERIOT_DEBUG_LOG(DEBUG_CONTEXT, "Error code: {}", -EFAULT);
+        return -EFAULT;
+    }
+    CHERIOT_END_HANDLER
 
     CHERIOT_DEBUG_LOG(DEBUG_CONTEXT, "upper[0] = {}", upper[0]);
 

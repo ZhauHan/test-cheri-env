@@ -64,6 +64,6 @@ on_run(function (target)
     else
         print("Running in normal mode...")
     end
-    table.insert(args, targetfile
+    table.insert(args, targetfile)
     os.execv(simulator, args)
 end)

@@ -20,7 +20,7 @@ option("debug_run")
 compartment("type-confusion")
     -- memcpy
     add_deps("freestanding", "debug", "unwind_error_handler")
-    add_files("type-confusion-solution.c")
+    add_files("type-confusion.c")
 
 -- Firmware image for the example.
 firmware("type-confusion-vulnerability")

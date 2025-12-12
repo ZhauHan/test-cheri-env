@@ -5,7 +5,7 @@
 #include <compartment.h>
 #include <debug.hh>
 #include <unwind.h>
-#include <fail-simulator-on-error.h>
+#include <errno.h>
 
 /// Expose debugging features unconditionally for this compartment.
 using Debug = ConditionalDebug<true, "Heap Buffer Over Read Compartment">;
@@ -25,9 +25,21 @@ int __cheri_compartment("heap-buffer-over-read") vuln1()
     arr[0] = 10;
     arr[1] = 20;
     arr[2] = 30;
+
+    CHERIOT_DURING
+    {
     Debug::log("Accessing arr[10] (out-of-bounds)...");
     int value = arr[10]; // Should fault
     Debug::log("Value: {} (This should not be printed)", value);
+    }
+    CHERIOT_HANDLER
+    {
+        Debug::log("Exception: Read outside Capability Bounds");
+        Debug::log("Error Code: {}", -EFAULT);
+        return -EFAULT;
+    }
+    CHERIOT_END_HANDLER
+
     delete[] arr;
     Debug::log("Completed without crashing (unexpected)");
     return 0;

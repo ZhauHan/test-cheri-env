@@ -5,6 +5,7 @@
 #include <debug.h>
 #include <unwind.h>
 #include <stdlib.h>
+#include <errno.h>
 
 
 #define DEBUG_CONTEXT "Use After Free Compartment"
@@ -22,8 +23,21 @@ __cheri_compartment("use-after-free") int vuln1()
     CHERIOT_DEBUG_LOG(DEBUG_CONTEXT, "Memory has been freed.");
 
     CHERIOT_DEBUG_LOG(DEBUG_CONTEXT, "Attempting to dereference dangling pointer... ");
-    *ptr = 456;
-    CHERIOT_DEBUG_LOG(DEBUG_CONTEXT, "Value is now: {}", *ptr);
+    CHERIOT_DURING
+    {
+        int val = *ptr; // Use-after-free read
+        CHERIOT_DEBUG_LOG(DEBUG_CONTEXT, "Read value: {} (this should not be printed)", val);
+        *ptr = 456;
+        CHERIOT_DEBUG_LOG(DEBUG_CONTEXT, "Value is now: {}", *ptr);
+    }
+    CHERIOT_HANDLER
+    {
+        CHERIOT_DEBUG_LOG(DEBUG_CONTEXT, "Exception: Use after free read");
+        CHERIOT_DEBUG_LOG(DEBUG_CONTEXT, "Error Code: {}", -EFAULT);
+        return -EFAULT;
+    }
+    CHERIOT_END_HANDLER
+    
 
     return 0;
 }
